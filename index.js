@@ -50,13 +50,7 @@ async function run() {
 
     })
 
-    app.get('/queries/:userEmail',async(req,res)=>{
-        const email = req.query.userEmail
-        const query = { 'User.userEmail': { $eq: email } };
-        const cursor =  ProductCollection.find(query);
-        const results = await cursor.toArray()
-        res.send(results)
-      })
+    
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
