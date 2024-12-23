@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors')
+const jwt = require('jsonwebtoken')
+const cookieParser = require('cookie-parser')
 require('dotenv').config()
+
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 // const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
@@ -10,11 +13,11 @@ const port = process.env.PORT || 5000;
 // Midleware
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 // https://assignment11-5d0f3.web.app
 
 
-// console.log(process.env.DB_USER)
-// console.log(process.env.DB_PASS)
+
 
 
 
@@ -43,6 +46,8 @@ async function run() {
        res.send(result)
       
     })
+
+    
 
     
     app.get('/queries', async (req, res) => {
@@ -144,7 +149,12 @@ async function run() {
       const result = await  ProductCollection.updateOne(filter,updateduser,options)
       res.send(result)
       })
-   
+      app.delete('/queries/:id',async(req,res)=>{
+        const id = req.params.id
+        const query = { _id: new ObjectId(id)};
+        const result = await ProductCollection.deleteOne(query);
+        res.send(result)
+      })
    
     
    
