@@ -11,7 +11,12 @@ const app = express()
 const port = process.env.PORT || 5000;
 
 // Midleware
-app.use(cors());
+app.use(cors(
+  {
+    origin: ['http://localhost:5173','https://assignment11-5d0f3.web.app'],
+    credentials:true
+  }
+));
 app.use(express.json());
 app.use(cookieParser());
 // https://assignment11-5d0f3.web.app
@@ -31,6 +36,21 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+// verify token
+const verifytoken = (req,res,next)=>{
+  const token = req?.cookies?.token;
+  console.log('token inside',token);
+  if(!token){
+    return res.status(401).send({message:'Unauthorized access'})
+  }
+  jwt.verify(token,process.env.SECRET_KEY,(err,decoded)=>{
+    if(err){
+      return res.status(403).send({message:'Forbidden access'})
+    }
+    req.user= decoded;
+  })
+  next()
+}
 const ProductCollection = client.db('productDB').collection('product');
 const RecommendationCollection = client.db('productDB').collection('recommendation');
 async function run() {
@@ -39,7 +59,7 @@ async function run() {
     // Send a ping to confirm a successful connection
    
     // const equipmentCollection = client.db('equipmentDB').collection('equipment');
-    app.post('/add-queries',async(req,res)=>{
+    app.post('/add-queries',verifytoken,async(req,res)=>{
         const data = req.body;
        console.log(data)
        const result = await ProductCollection.insertOne(data)
@@ -47,42 +67,66 @@ async function run() {
       
     })
 
+    app.post('/jwt',verifytoken,async(req,res)=>{
+      const user = req.body
+      const token = jwt.sign(user,process.env.SECRET_KEY,{expiresIn:'1h'})
+      
+      res.cookie('token',token,{
+        httpOnly: true,
+        secure:false
+        
+      }).send({success:true})
     
+  })
+
+  app.post('/logout',(req,res)=>{
+    
+    
+    res.clearCookie('token',{
+      httpOnly: true,
+      secure:false
+      
+    }).send({success:true})
+  
+})
 
     
-    app.get('/queries', async (req, res) => {
-      const search = req.query.search || ""; 
-      console.log(search);
-    
-      let query = {};
-      if (search) {
-        query = {
-          name: {
-            $regex: search,
-            $options: 'i', 
-          },
-        };
-      }
-    
-      try {
-        const cursor = ProductCollection.find(query);
-        const result = await cursor.toArray();
-        res.send(result);
-      } catch (error) {
-        console.error("Error fetching queries:", error);
-        res.status(500).send({ error: "An error occurred while fetching queries." });
-      }
-    });
+    app.get('/queries',verifytoken,async (req, res) => {
+        const search = req.query.search || "";
+        console.log(search);
 
-    app.get('/queries/:userEmail',async(req,res)=>{
+        let query = {};
+        if (search) {
+          query = {
+            name: {
+              $regex: search,
+              $options: 'i',
+            },
+          };
+        }
+
+        try {
+          const cursor = ProductCollection.find(query);
+          const result = await cursor.toArray();
+          res.send(result);
+        } catch (error) {
+          console.error("Error fetching queries:", error);
+          res.status(500).send({ error: "An error occurred while fetching queries." });
+        }
+      });
+
+    app.get('/queries/:userEmail',verifytoken,async(req,res)=>{
+      const decodedEmail = req.user?.email
         const email = req.query.userEmail
+        if(decodedEmail !== email){
+          return res.status(401).send({message:"You are not authorized to access this resource."})}
         const query = { 'User.userEmail': { $eq: email } };
         const cursor =  ProductCollection.find(query);
         const results = await cursor.toArray()
         res.send(results)
       })
 
-      app.post('/recommendation',async(req,res)=>{
+      app.post('/recommendation',verifytoken ,async(req,res)=>{
         const data = req.body;
         const query={userEmail:data.userEmail,queryid:data.queryid} 
         const alreadyExist = await RecommendationCollection.findOne(query)
@@ -100,35 +144,40 @@ async function run() {
       
     })
 
-    app.get('/recomendationforme/:userEmail',async(req,res)=>{
+    app.get('/recomendationforme/:userEmail',verifytoken ,async(req,res)=>{
       const email = req.query.userEmail
+      const decodedEmail = req.user?.email
+      if(decodedEmail !== email){
+        return res.status(401).send({message:"You are not authorized to access this resource."})}
       const query = { 'userEmail': { $eq: email } };
       const cursor =  RecommendationCollection.find(query);
       const results = await cursor.toArray()
       res.send(results)
     })
-    app.get('/myrecommendation/:userEmail',async(req,res)=>{
+    app.get('/myrecommendation/:userEmail',verifytoken ,async(req,res)=>{
       const email = req.query.userEmail
-      console.log(email)
+     const decodedEmail = req.user?.email
+      if(decodedEmail !== email){
+        return res.status(401).send({message:"You are not authorized to access this resource."})}
       const query = {'RecommenderEmail':{ $eq: email } };
       const cursor =  RecommendationCollection.find(query);
       const results = await cursor.toArray()
       res.send(results)
     })
-    app.get('/details/:id',async(req,res)=>{
+    app.get('/details/:id',verifytoken ,async(req,res)=>{
       const id = req.params.id
       const query = { _id: new ObjectId(id)};
       const result = await ProductCollection.findOne(query);
       res.send(result)
     })
-    app.get('/queries/update/:id',async(req,res)=>{
+    app.get('/queries/update/:id',verifytoken ,async(req,res)=>{
       const id = req.params.id
       const query = { _id: new ObjectId(id)};
       const result = await ProductCollection.findOne(query);
       res.send(result)
     })
   
-    app.put('/queries/:id',async(req,res)=>{
+    app.put('/queries/:id',verifytoken ,async(req,res)=>{
       const id = req.params.id
       const updateInfo = req.body
       console.log(updateInfo)
@@ -149,7 +198,7 @@ async function run() {
       const result = await  ProductCollection.updateOne(filter,updateduser,options)
       res.send(result)
       })
-      app.delete('/queries/:id',async(req,res)=>{
+      app.delete('/queries/:id',verifytoken,async(req,res)=>{
         const id = req.params.id
         const query = { _id: new ObjectId(id)};
         const result = await ProductCollection.deleteOne(query);
