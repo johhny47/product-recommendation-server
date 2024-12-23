@@ -44,12 +44,30 @@ async function run() {
       
     })
 
-    app.get('/queries',async(req,res)=>{
-        const cursor = ProductCollection.find();
-        const result = await cursor.toArray()
-        res.send(result)
-
-    })
+    
+    app.get('/queries', async (req, res) => {
+      const search = req.query.search || ""; 
+      console.log(search);
+    
+      let query = {};
+      if (search) {
+        query = {
+          name: {
+            $regex: search,
+            $options: 'i', 
+          },
+        };
+      }
+    
+      try {
+        const cursor = ProductCollection.find(query);
+        const result = await cursor.toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching queries:", error);
+        res.status(500).send({ error: "An error occurred while fetching queries." });
+      }
+    });
 
     app.get('/queries/:userEmail',async(req,res)=>{
         const email = req.query.userEmail
