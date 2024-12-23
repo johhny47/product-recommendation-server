@@ -122,7 +122,29 @@ async function run() {
       const result = await ProductCollection.findOne(query);
       res.send(result)
     })
-
+  
+    app.put('/queries/:id',async(req,res)=>{
+      const id = req.params.id
+      const updateInfo = req.body
+      console.log(updateInfo)
+      const filter =  { _id: new ObjectId(id)};
+      const options = { upsert : true}
+      const updateduser ={
+        $set:{
+          name:updateInfo.name,
+          brand:updateInfo.brand,
+          productImageURL:updateInfo.productImageURL,
+          title:updateInfo.title,
+          BoycottingReason:updateInfo.BoycottingReason,
+          User:updateInfo.User,
+          currentDate:updateInfo.currentDate,
+          recommendationCount:updateInfo.recommendationCount
+        }
+      }
+      const result = await  ProductCollection.updateOne(filter,updateduser,options)
+      res.send(result)
+      })
+   
    
     
    
