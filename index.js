@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000;
 // Midleware
 app.use(cors());
 app.use(express.json());
-
+// https://assignment11-5d0f3.web.app
 
 
 // console.log(process.env.DB_USER)
@@ -77,7 +77,14 @@ async function run() {
       
     })
 
-     
+    app.get('/recomendationforme/:userEmail',async(req,res)=>{
+      const email = req.query.userEmail
+      const query = { 'userEmail': { $eq: email } };
+      const cursor =  RecommendationCollection.find(query);
+      const results = await cursor.toArray()
+      res.send(results)
+    })
+   
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
