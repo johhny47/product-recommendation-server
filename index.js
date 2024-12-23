@@ -29,6 +29,7 @@ const client = new MongoClient(uri, {
   }
 });
 const ProductCollection = client.db('productDB').collection('product');
+const RecommendationCollection = client.db('productDB').collection('recommendation');
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -58,8 +59,25 @@ async function run() {
         res.send(results)
       })
 
+      app.post('/recommendation',async(req,res)=>{
+        const data = req.body;
+        const query={userEmail:data.userEmail,queryid:data.queryid} 
+        const alreadyExist = await RecommendationCollection.findOne(query)
+        if(alreadyExist)
+            return res.status(401).send('you have already recommended')
+     
+        
+    const result = await RecommendationCollection.insertOne(data)
+    const filter = {_id: new ObjectId(data.queryid)}
+    const update={
+    $inc:{recommendationCount:1},
+   }
+   const UpdaterecommendationCount= await ProductCollection.updateOne(filter,update)
+   res.send(result)
       
+    })
 
+     
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
