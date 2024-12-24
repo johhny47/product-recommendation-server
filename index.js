@@ -67,9 +67,9 @@ async function run() {
       
     })
 
-    app.post('/jwt',verifytoken,async(req,res)=>{
+    app.post('/jwt',async(req,res)=>{
       const user = req.body
-      const token = jwt.sign(user,process.env.SECRET_KEY,{expiresIn:'1h'})
+      const token = jwt.sign(user,process.env.SECRET_KEY,{expiresIn:'10h'})
       
       res.cookie('token',token,{
         httpOnly: true,
@@ -91,7 +91,7 @@ async function run() {
 })
 
     
-    app.get('/queries',verifytoken,async (req, res) => {
+    app.get('/queries',async (req, res) => {
         const search = req.query.search || "";
         console.log(search);
 
@@ -164,7 +164,7 @@ async function run() {
       const results = await cursor.toArray()
       res.send(results)
     })
-    app.get('/details/:id',verifytoken ,async(req,res)=>{
+    app.get('/details/:id',async(req,res)=>{
       const id = req.params.id
       const query = { _id: new ObjectId(id)};
       const result = await ProductCollection.findOne(query);
@@ -205,6 +205,41 @@ async function run() {
         res.send(result)
       })
    
+      app.delete('/recommendation/:id', verifytoken, async (req, res) => {
+        const id = req.params.id; 
+        try {
+           
+            const recommendation = await RecommendationCollection.findOne({ _id: new ObjectId(id) });
+    
+            if (!recommendation) {
+                return res.status(404).send('Recommendation not found');
+            }
+    
+            const queryid = recommendation.queryid;
+    
+           
+            const deleteResult = await RecommendationCollection.deleteOne({ _id: new ObjectId(id) });
+    
+            if (deleteResult.deletedCount === 0) {
+                return res.status(500).send('Failed to delete recommendation');
+            }
+    
+          
+            const filter = { _id: new ObjectId(queryid) };
+            const update = { $inc: { recommendationCount: -1 } };
+    
+            const updateResult = await ProductCollection.updateOne(filter, update);
+    
+            if (updateResult.modifiedCount === 0) {
+                console.warn('Failed to decrement recommendationCount for queryid:', queryid);
+            }
+    
+            res.send({ success: true, message: 'Recommendation deleted and count decremented' });
+        } catch (error) {
+            console.error('Error deleting recommendation:', error);
+            res.status(500).send('Internal server error');
+        }
+    });
     
    
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
