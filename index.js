@@ -106,7 +106,8 @@ async function run() {
         }
 
         try {
-          const cursor = ProductCollection.find(query);
+          const cursor = ProductCollection.find(query).sort({currentDate: -1 })
+          
           const result = await cursor.toArray();
           res.send(result);
         } catch (error) {
@@ -121,7 +122,7 @@ async function run() {
         if(decodedEmail !== email){
           return res.status(401).send({message:"You are not authorized to access this resource."})}
         const query = { 'User.userEmail': { $eq: email } };
-        const cursor =  ProductCollection.find(query);
+        const cursor =  ProductCollection.find(query).sort({currentDate: -1 });
         const results = await cursor.toArray()
         res.send(results)
       })
@@ -170,6 +171,7 @@ async function run() {
       const result = await ProductCollection.findOne(query);
       res.send(result)
     })
+
     app.get('/queries/update/:id',verifytoken ,async(req,res)=>{
       const id = req.params.id
       const query = { _id: new ObjectId(id)};
@@ -240,6 +242,14 @@ async function run() {
             res.status(500).send('Internal server error');
         }
     });
+
+    app.get('/query/home',async(req,res)=>{
+     
+      const result = await ProductCollection.find().sort({currentDate: -1 }) 
+      .limit(6).toArray()
+
+      res.send(result)
+    })
     
    
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
