@@ -73,7 +73,8 @@ async function run() {
       
       res.cookie('token',token,{
         httpOnly: true,
-        secure:false
+        secure:process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         
       }).send({success:true})
     
@@ -84,7 +85,8 @@ async function run() {
     
     res.clearCookie('token',{
       httpOnly: true,
-      secure:false
+      secure:process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
       
     }).send({success:true})
   
@@ -141,7 +143,7 @@ async function run() {
     $inc:{recommendationCount:1},
    }
    const UpdaterecommendationCount= await ProductCollection.updateOne(filter,update)
-   res.send(result)
+   res.send(UpdaterecommendationCount)
       
     })
 
@@ -171,7 +173,12 @@ async function run() {
       const result = await ProductCollection.findOne(query);
       res.send(result)
     })
-
+    app.get('/seemore/:id',async(req,res)=>{
+      const id = req.params.id
+      const query = { _id: new ObjectId(id)};
+      const result = await ProductCollection.findOne(query);
+      res.send(result)
+    })
     app.get('/queries/update/:id',verifytoken ,async(req,res)=>{
       const id = req.params.id
       const query = { _id: new ObjectId(id)};
@@ -262,7 +269,7 @@ run().catch(console.dir);
 
 
 app.get('/',(req,res)=>{
-    res.send('Hello from server')
+    res.send('Hello from server side')
 })
 
 
