@@ -13,7 +13,5 @@ jobs:
       - uses: actions/checkout@v3
 
       - run: |
-          cd your-project
-          git pull origin main
           npm install
           pm2 restart all
