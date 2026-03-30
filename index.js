@@ -269,7 +269,7 @@ run().catch(console.dir);
 
 
 app.get('/',(req,res)=>{
-    res.send('Hello from server side')
+    res.send('Hello from server sid')
 })
 
 
