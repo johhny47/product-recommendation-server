@@ -273,6 +273,10 @@ app.get('/test',(req,res)=>{
 })
 
 
+app.get('/',(req,res)=>{
+    res.send('Welcome to product recommendation server')
+})
+
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port: ${port}`)
 })
