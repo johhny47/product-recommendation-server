@@ -12,6 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - run: |
+      - name: Install & Deploy
+        run: |
           npm install
-          pm2 restart all
+          pm2 reload my-app || pm2 start index.js --name my-app --update-env
